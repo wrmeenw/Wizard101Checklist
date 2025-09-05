@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Wizard101 Spellbook — Daily Tasks</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root {
+      --bg1:#0f1024;
+      --bg2:#1b1c38;
+      --card:#201f3b;
+      --ink:#f5e9ff;
+      --muted:#c7b8f7;
+      --accent:#9d7dff;
+      --accent-2:#6a4cc5;
+      --gold:#ffd76b;
+      --radius:18px;
+      --shadow:0 0 20px rgba(157,125,255,.4);
+    }
+    *{box-sizing:border-box}
+    body {
+      margin:0;
+      font-family: "Cinzel Decorative", ui-serif, Georgia, serif;
+      color:var(--ink);
+      background: radial-gradient(circle at top, var(--bg2) 0%, var(--bg1) 100%);
+      display:grid; place-items:center;
+      padding:24px;
+    }
+    .wrap { width:100%; max-width:800px; }
+
+    .nav {
+      background:linear-gradient(180deg,#2a2950,#1b1c38);
+      border:2px solid var(--gold);
+      border-radius:var(--radius);
+      padding:10px 16px;
+      display:flex; justify-content:space-between; align-items:center;
+      color:var(--gold);
+      text-shadow:0 0 6px rgba(255,215,107,.7);
+      box-shadow:var(--shadow);
+    }
+    .brand { font-size:20px; font-weight:900; letter-spacing:1px; }
+    .chip {
+      font-size:13px; padding:6px 12px; border-radius:999px;
+      background:var(--accent-2); border:1px solid var(--gold);
+    }
+
+    .board {
+      margin-top:20px;
+      background:var(--card);
+      border:2px solid var(--accent);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+    }
+    .head {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:14px 18px;
+      background:linear-gradient(180deg,#322e59,#201f3b);
+      border-bottom:1px solid var(--accent);
+    }
+    .date { font-weight:800; font-size:16px; color:var(--gold); }
+    .stats { font-size:14px; color:var(--muted); }
+
+    .composer {
+      display:flex; gap:10px; padding:14px 18px;
+      border-bottom:1px solid var(--accent-2);
+    }
+    .input {
+      flex:1; padding:12px 14px;
+      border-radius:10px;
+      background:#2c2952;
+      border:1px solid var(--accent-2);
+      color:var(--ink);
+      font-size:15px;
+      font-family:inherit;
+    }
+    .input:focus { outline:none; border-color:var(--gold); box-shadow:0 0 6px var(--gold); }
+
+    .btn {
+      background:linear-gradient(180deg,#8d6bff,#5c3dad);
+      border:2px solid var(--gold);
+      color:var(--gold);
+      padding:10px 14px;
+      border-radius:10px;
+      font-weight:800;
+      font-family:inherit;
+      cursor:pointer;
+      box-shadow:0 4px 8px rgba(0,0,0,.4);
+    }
+    .btn:hover { transform:translateY(-2px); }
+    .btn:active { transform:translateY(1px); }
+
+    .list { padding:12px 16px; max-height:55vh; overflow-y:auto; }
+    .empty { text-align:center; padding:16px; color:var(--muted); }
+
+    .item {
+      background:#2b2951;
+      border:1px solid var(--accent-2);
+      border-radius:12px;
+      padding:10px;
+      margin:8px 0;
+      display:grid; grid-template-columns: 26px 1fr auto; gap:8px; align-items:center;
+      box-shadow:0 0 8px rgba(157,125,255,.25);
+    }
+    .item.done { opacity:.7; background:#262347; }
+    .text { font-weight:700; }
+    .done .text { text-decoration:line-through; color:var(--muted); }
+
+    .check { accent-color: var(--gold); cursor:pointer; }
+    .rowBtns { display:flex; gap:6px; }
+    .sm {
+      background:#382e68; border:1px solid var(--accent);
+      color:var(--ink); padding:6px 8px; border-radius:8px;
+      cursor:pointer; font-size:12px;
+    }
+
+    .foot {
+      display:flex; justify-content:space-between; align-items:center;
+      padding:10px 14px; border-top:1px solid var(--accent-2);
+      font-size:13px; color:var(--muted);
+    }
+  </style>
+
+  <!-- React + ReactDOM + Babel -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div id="root"></div>
+  </div>
+
+  <script type="text/babel">
+    const {useState, useEffect} = React;
+
+    const todayKey = () => "wizpad-" + new Date().toISOString().slice(0,10);
+    const formatDate = () =>
+      new Date().toLocaleDateString(undefined,{weekday:'long', month:'long', day:'numeric', year:'numeric'});
+
+    function Item({item, onToggle, onDelete, onEdit}) {
+      const [editing,setEditing]=useState(false);
+      const [draft,setDraft]=useState(item.text);
+
+      const save=()=>{ if(draft.trim()) onEdit(item.id,draft.trim()); setEditing(false); };
+
+      return (
+        <div className={`item ${item.done?"done":""}`}>
+          <input type="checkbox" className="check" checked={item.done} onChange={()=>onToggle(item.id)} />
+          {editing?(
+            <input
+              className="input"
+              style={{padding:"6px 8px",fontSize:"14px"}}
+              value={draft}
+              onChange={e=>setDraft(e.target.value)}
+              onBlur={save}
+              onKeyDown={e=>{if(e.key==="Enter") save(); if(e.key==="Escape") setEditing(false);}}
+            />
+          ):(
+            <div className="text" onDoubleClick={()=>setEditing(true)}>{item.text}</div>
+          )}
+          <div className="rowBtns">
+            <button className="sm" onClick={()=>setEditing(true)}>✏️</button>
+            <button className="sm" onClick={()=>onDelete(item.id)}>🗑️</button>
+          </div>
+        </div>
+      );
+    }
+
+    function App(){
+      const [items,setItems]=useState(()=>{
+        const raw=localStorage.getItem(todayKey());
+        return raw?JSON.parse(raw):[];
+      });
+      const [input,setInput]=useState("");
+
+      useEffect(()=>{
+        localStorage.setItem(todayKey(),JSON.stringify(items));
+      },[items]);
+
+      const add=()=>{
+        if(!input.trim())return;
+        setItems([...items,{id:Date.now(),text:input.trim(),done:false}]);
+        setInput("");
+      };
+
+      const toggle=id=>setItems(items.map(it=>it.id===id?{...it,done:!it.done}:it));
+      const del=id=>setItems(items.filter(it=>it.id!==id));
+      const edit=(id,text)=>setItems(items.map(it=>it.id===id?{...it,text}:it));
+
+      return (
+        <>
+          <nav className="nav">
+            <div className="brand">🔮 Wizard’s Spellbook</div>
+            <span className="chip">Autosaves ✧</span>
+          </nav>
+          <section className="board">
+            <div className="head">
+              <div className="date">{formatDate()}</div>
+              <div className="stats">{items.filter(i=>!i.done).length} left · {items.length} total</div>
+            </div>
+            <div className="composer">
+              <input className="input" placeholder="New incantation (task)…"
+                value={input} onChange={e=>setInput(e.target.value)}
+                onKeyDown={e=>{if(e.key==="Enter") add();}}/>
+              <button className="btn" onClick={add}>Add ✨</button>
+            </div>
+            <div className="list">
+              {items.length===0?(
+                <div className="empty">The spellbook is empty… add your first task! 📜</div>
+              ):items.map(it=>(
+                <Item key={it.id} item={it} onToggle={toggle} onDelete={del} onEdit={edit}/>
+              ))}
+            </div>
+            <div className="foot">
+              <span>Tip: Double-click to edit a spell ✏️</span>
+              <button className="btn sm" onClick={()=>setItems(items.filter(i=>!i.done))}>Clear Completed</button>
+            </div>
+          </section>
+        </>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
+</body>
+</html>
